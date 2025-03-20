@@ -68,6 +68,42 @@ def serialize(obj):
     else:
         return obj  # Primitive value
 
+import json
+
+def transform_data(obj):
+    uR = obj.get("Pport", {}).get("uR", {})
+    train_info = uR.get("TS", {})
+    
+    # Ensure locations is always a list
+    locations = train_info.get("ns5:Location", [])
+    if isinstance(locations, dict):  
+        locations = [locations]  # Wrap single dictionary into a list
+    
+    structured_data = {
+        "updateOrigin": uR.get("@updateOrigin"),
+        "requestSource": uR.get("@requestSource"),
+        "requestID": uR.get("@requestID"),
+        "train": {
+            "rid": train_info.get("@rid"),
+            "uid": train_info.get("@uid"),
+            "ssd": train_info.get("@ssd")
+        },
+        "stationUpdates": []
+    }
+
+    for loc in locations:
+        structured_data["stationUpdates"].append({
+            "stationCode": loc.get("@tpl"),
+            "workingTimePlanned": loc.get("@wtp"),
+            "estimatedTime": loc.get("ns5:pass", {}).get("@at"),
+            "platform": loc.get("ns5:plat", {}).get("#text") if isinstance(loc.get("ns5:plat"), dict) else None,
+            "platformConfirmed": loc.get("ns5:plat", {}).get("@conf") == "true" if isinstance(loc.get("ns5:plat"), dict) else None
+        })
+    
+    return structured_data
+
+
+
 def connect_and_subscribe(connection):
     if stomp.__version__[0] < '5':
         connection.start()
@@ -117,13 +153,14 @@ class StompClient(stomp.ConnectionListener):
             # obj = PPv16.CreateFromDocument(msg)
             obj = _sch3.CreateFromDocument(msg)
             obj = xmltodict.parse(msg)
-
-            logging.info("Successfully received a Darwin Push Port message from %s")
-            logging.info('Raw XML=%s' % msg)
+            # logging.info("Successfully received a Darwin Push Port message from %s")
+            # logging.info('Raw XML=%s' % msg)
             serialized_obj = serialize(obj)
-            logging.info('Object=%s' % json.dumps(serialized_obj))
+            #logging.info('Object=%s' % json.dumps(serialized_obj, indent=4))
+            transformed_obj = transform_data(serialized_obj)
+            logging.info('Object_transformed=%s' % json.dumps(transformed_obj, indent=4))
 
-            producer.send("rail_network", json.dumps(serialized_obj).encode('utf-8'))
+            producer.send("rail_network", json.dumps(transformed_obj).encode('utf-8'))
 
 
 
