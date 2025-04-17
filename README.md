@@ -21,13 +21,13 @@ Create the kafka topic
 ===================================
 
 ```bash
-docker exec -it flink-kafka-1 kafka-topics.sh --create --topic rail_network  --bootstrap-server flink-kafka-1:9093
+docker exec -it flink_kafka_1 kafka-topics.sh --create --topic rail_network  --bootstrap-server flink_kafka_1:9093
 ```
 
 Alternatively, delete it:
 
 ```bash
-docker exec -it flink-kafka-1 kafka-topics.sh --delete --topic rail_network  --bootstrap-server flink-kafka-1:9093
+docker exec -it flink_kafka_1 kafka-topics.sh --delete --topic rail_network  --bootstrap-server flink_kafka_1:9093
 ```
 
 Start the producer
@@ -46,30 +46,8 @@ Check produced messages
 You can test check if the messages have been produced with:
 
 ```bash
-docker exec -it flink-kafka-1 kafka-console-consumer.sh --bootstrap-server flink-kafka-1:9093 --topic rail_network --from-beginning
+docker exec -it flink_kafka_1 kafka-console-consumer.sh --bootstrap-server flink_kafka_1:9093 --topic rail_network --from-beginning
 ```
-
-Analyze with Flink
-====================================
-
-With the services running, you can now enter the flink instance:
-
-```bash
-docker exec -it jobmanager /bin/bash
-
-# after entering the container, start the sql client:
-./bin/sql-client.sh
-```
-
-Flink SQL Statements
-======================================
-
-Copy paste the table definition from the `sql` directory of this project into the SQL client.
-
-Then, use `SELECT * FROM rail_network` to get the feed.
-
-Notes
-======================================
 
 This Repo was initialized using the National Rail Open Data Python Example (https://github.com/openraildata/stomp-client-python/tree/main)
 
