@@ -39,8 +39,8 @@ logging.basicConfig(format='%(asctime)s %(levelname)s\t%(message)s', level=loggi
 
 try:
     import PPv16
-    import xml_parsers._ct2
-    import xml_parsers._sch3
+    import pyxb_bindings._ct2
+    import pyxb_bindings._sch3
 except ModuleNotFoundError:
     logging.error("Class files not found - please configure the client following steps in README.md!")
 
@@ -151,7 +151,7 @@ class StompClient(stomp.ConnectionListener):
             msg = zlib.decompress(frame.body, zlib.MAX_WBITS | 32)
             logging.debug(msg)
             # obj = PPv16.CreateFromDocument(msg)
-            obj = xml_parsers._sch3.CreateFromDocument(msg)
+            obj = pyxb_bindings._sch3.CreateFromDocument(msg)
             obj = xmltodict.parse(msg)
             # logging.info("Successfully received a Darwin Push Port message from %s")
             # logging.info('Raw XML=%s' % msg)
