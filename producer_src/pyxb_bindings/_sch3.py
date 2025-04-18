@@ -24,9 +24,9 @@ _PyXBVersion = '1.2.6'
 _module_typeBindings = pyxb.utils.utility.Object()
 
 # Import bindings for namespaces imported into schema
-import _ct as _ImportedBinding__ct
-import _ct2 as _ImportedBinding__ct2
-import _ct3 as _ImportedBinding__ct3
+import pyxb_bindings._ct as _ImportedBinding__ct
+import pyxb_bindings._ct2 as _ImportedBinding__ct2
+import pyxb_bindings._ct3 as _ImportedBinding__ct3
 import pyxb.binding.datatypes
 
 # NOTE: All namespace declarations are reserved within the binding
