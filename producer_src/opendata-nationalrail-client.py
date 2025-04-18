@@ -143,26 +143,24 @@ class StompClient(stomp.ConnectionListener):
 
     def on_message(self, frame):
         try:
-            logging.info('Message sequence=%s, type=%s received', frame.headers['SequenceNumber'],
-                         frame.headers['MessageType'])
+            # logging.info('Message sequence=%s, type=%s received', frame.headers['SequenceNumber'],
+                         # frame.headers['MessageType'])
             bio = io.BytesIO()
             bio.write(str.encode('utf-16'))
             bio.seek(0)
             msg = zlib.decompress(frame.body, zlib.MAX_WBITS | 32)
-            logging.debug(msg)
+            # logging.debug(msg)
             # obj = PPv16.CreateFromDocument(msg)
-            obj = pyxb_bindings._sch3.CreateFromDocument(msg)
-            obj = xmltodict.parse(msg)
+            # obj = pyxb_bindings._sch3.CreateFromDocument(msg)
+            # obj = xmltodict.parse(msg)
             # logging.info("Successfully received a Darwin Push Port message from %s")
             # logging.info('Raw XML=%s' % msg)
-            serialized_obj = serialize(obj)
+            # serialized_obj = serialize(obj)
             #logging.info('Object=%s' % json.dumps(serialized_obj, indent=4))
-            transformed_obj = transform_data(serialized_obj)
-            logging.info('Object_transformed=%s' % json.dumps(transformed_obj, indent=4))
-
-            producer.send("rail_network", json.dumps(transformed_obj).encode('utf-8'))
-
-
+            # transformed_obj = transform_data(serialized_obj)
+            # logging.info('Object_transformed=%s' % json.dumps(transformed_obj, indent=4))
+            logging.info("message=%s" % msg)
+            producer.send("rails_network", msg)
 
         except Exception as e:
             logging.error(str(e))
