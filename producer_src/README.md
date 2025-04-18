@@ -37,6 +37,7 @@ Start the producer
 # ensure you have created a venv and installed requirements.txt
 python3 -m venv venv
 source venv/bin/activate
+pip install -r requirements.txt
 
 python3 opendata-nationrail-client.py
 ```
