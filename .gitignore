@@ -3,3 +3,6 @@ __pycache__
 ppv16
 .env
 .pytest_cache
+py38env
+.python-version
+*.pyc
