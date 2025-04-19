@@ -159,8 +159,9 @@ class StompClient(stomp.ConnectionListener):
             #logging.info('Object=%s' % json.dumps(serialized_obj, indent=4))
             # transformed_obj = transform_data(serialized_obj)
             # logging.info('Object_transformed=%s' % json.dumps(transformed_obj, indent=4))
-            logging.info("message=%s" % msg)
-            producer.send("rails_network", msg)
+            # logging.info("message=%s" % msg)
+            # print("message=%s" % msg)
+            producer.send("rail_network", msg)
 
         except Exception as e:
             logging.error(str(e))
