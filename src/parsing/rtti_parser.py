@@ -1,58 +1,65 @@
-from pyxb_bindings._for import CreateFromDocument as parse_ts_raw
-from pyxb_bindings._sch3 import CreateFromDocument as parse_schedule_raw
+import sys
+from kafka import KafkaConsumer
+from kafka.errors import NoBrokersAvailable
 
-def parse_ts_message(xml_string):
-    try:
-        obj = parse_ts_raw(xml_string)
-        return obj
-    except Exception as e:
-        print(f"TS parsing failed: {e}")
-        return None
+try:
+    # Import the same set of modules as the producer
+    import PPv16
+    import pyxb_bindings._for
+    import pyxb_bindings._sch3
+except ImportError as e:
+    print(f"Error importing PyXB bindings: {e}")
+    print("Please ensure the bindings are generated and accessible in your PYTHONPATH.")
+    sys.exit(1)
 
-def parse_schedule_message(xml_string):
-    try:
-        obj = parse_schedule_raw(xml_string)
-        return obj
-    except Exception as e:
-        print(f"Schedule parsing failed: {e}")
-        return None
+# --- Kafka Configuration ---
+KAFKA_TOPIC = 'rail_network'
+KAFKA_BROKERS = ['localhost:9092']
 
 if __name__ == "__main__":
-    sample_ts_xml = """<?xml version="1.0" encoding="UTF-8"?>
-<TS xmlns="http://www.thalesgroup.com/rtti/PushPort/Forecasts/v3"
-    rid="123456" uid="7890" ssd="2025-04-18">
-    <Location tpl="ABC123" pta="12:30" et="12:35"/>
-</TS>
-"""
+    print(f"Attempting to connect to Kafka brokers: {KAFKA_BROKERS}")
+    print(f"Subscribing to topic: {KAFKA_TOPIC}")
 
-    sample_schedule_xml = """<?xml version="1.0" encoding="UTF-8"?>
-<Schedule xmlns="http://www.thalesgroup.com/rtti/PushPort/Schedules/v3"
-          rid="654321" uid="0987" trainId="1B23" ssd="2025-04-18" toc="VT" status="P" trainCat="OO">
-    <OR tpl="XYZ789" wta="12:00" wtd="12:05" pta="12:00" ptd="12:05"/>
-</Schedule>
-"""
+    consumer = None
+    try:
+        consumer = KafkaConsumer(
+            KAFKA_TOPIC,
+            bootstrap_servers=KAFKA_BROKERS,
+            auto_offset_reset='earliest',
+            consumer_timeout_ms=-1,
+        )
 
-    ts_obj = parse_ts_message(sample_ts_xml)
-    schedule_obj = parse_schedule_message(sample_schedule_xml)
+        print("Successfully connected to Kafka. Waiting for messages...")
 
-    if ts_obj:
-        print("TS Parsed Successfully")
-        print("TS RID:", getattr(ts_obj, 'rid', None))
-        if hasattr(ts_obj, 'Location') and ts_obj.Location:
-            loc = ts_obj.Location[0]
-            print("First TPL:", getattr(loc, 'tpl', None))
-            print("PTA:", getattr(loc, 'pta', None))
-            print("ET:", getattr(loc, 'et', None))
-        else:
-            print("No Location elements found.")
+        for message in consumer:
+            print(f"\n--- Received Message ---")
+            print(f"Topic: {message.topic}, Partition: {message.partition}, Offset: {message.offset}")
 
-    if schedule_obj:
-        print("Schedule Parsed Successfully")
-        print("Schedule RID:", getattr(schedule_obj, 'rid', None))
-        if hasattr(schedule_obj, 'OR') and schedule_obj.OR:
-            or_loc = schedule_obj.OR[0]
-            print("First OR TPL:", getattr(or_loc, 'tpl', None))
-            print("WTA:", getattr(or_loc, 'wta', None))
-            print("WTD:", getattr(or_loc, 'wtd', None))
-        else:
-            print("No OR elements found.")
+            # message.value IS NOW BYTES
+            xml_bytes = message.value
+            if not xml_bytes:
+                print("Received empty message value. Skipping.")
+                continue
+
+            print(f"Type of received value: {type(xml_bytes)}") # Should print <class 'bytes'>
+
+            try:
+                # Pass the BYTES directly to PyXB
+                obj = pyxb_bindings._sch3.CreateFromDocument(xml_bytes)
+                print(f"Parsed XML successfully (Object: {obj})")
+            except Exception as parse_error:
+                print(f"!!! PyXB Parsing failed: {parse_error}")
+
+
+    except NoBrokersAvailable:
+        print(f"Error: Could not connect to Kafka brokers at {KAFKA_BROKERS}.")
+    except KeyboardInterrupt:
+        print("\nConsumer interrupted by user (Ctrl+C). Shutting down.")
+    except Exception as e:
+        # Catch other errors (Kafka connection, etc.)
+        print(f"\nAn unexpected error occurred outside parsing: {e}")
+    finally:
+        if consumer:
+            print("Closing Kafka consumer...")
+            consumer.close()
+            print("Consumer closed.")
