@@ -5,7 +5,9 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends python3 python3-pip && \
     rm -rf /var/lib/apt/lists/*
 
-RUN python3 --version
+RUN ln -s /usr/bin/python3 /usr/bin/python
+    
+RUN pip install --no-cache-dir apache-flink==1.19.0
 
 # Download required dependencies
 RUN wget -P /opt/flink/lib https://repo.maven.apache.org/maven2/org/apache/flink/flink-sql-connector-kafka/3.0.2-1.18/flink-sql-connector-kafka-3.0.2-1.18.jar && \
