@@ -28,7 +28,10 @@ def run_kafka_consumer_job():
     ds.map(lambda msg: f"Received from Kafka: {msg}", output_type=Types.STRING()) \
       .print()
 
-    env.execute("Kafka Rail Network Consumer Job")
+    try:
+        env.execute("Kafka Rail Network Consumer Job")
+    except Exception as e:
+        print(f"Failed to connect to Kafka: {e}")
 
 
 if __name__ == '__main__':
