@@ -59,3 +59,10 @@ How to use
 Notice the generated xml parsing class files (_ct.py, _ct2.py, _ct3.py, etc). Explore them and see the different attributes they each offer.
 
 In the main client (opendata-nationalrail-client.py), you can import these individual files, and then bind the xml to these classes. See how to do so in the `on_message()` function.
+
+Run the consumer
+======================================
+```bash
+docker exec -it jobmanager flink run --python /opt/flink/usrcode/job.py --parallelism 1
+```
+
