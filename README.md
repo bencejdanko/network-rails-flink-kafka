@@ -8,8 +8,6 @@ Start the dockerized enviroment
 =====================================
 
 ```bash
-cd installations/flink
-
 # First, build the image
 docker build -t flink -f flink.Dockerfile .
 
@@ -17,18 +15,10 @@ docker build -t flink -f flink.Dockerfile .
 docker-compose up -d
 ```
 
-Create the kafka topic
+Connect to the WebUI
 ===================================
 
-```bash
-docker exec -it flink_kafka_1 kafka-topics.sh --create --topic rail_network  --bootstrap-server flink_kafka_1:9093
-```
-
-Alternatively, delete it:
-
-```bash
-docker exec -it flink_kafka_1 kafka-topics.sh --delete --topic rail_network  --bootstrap-server flink_kafka_1:9093
-```
+http://localhost:8082/#/overview
 
 Start the producer
 ======================================
@@ -48,7 +38,7 @@ Check produced messages
 You can test check if the messages have been produced with:
 
 ```bash
-docker exec -it flink_kafka_1 kafka-console-consumer.sh --bootstrap-server flink_kafka_1:9093 --topic rail_network --from-beginning
+docker exec -it network-rails-flink-kafka_kafka_1 kafka-console-consumer.sh --bootstrap-server network-rails-flink-kafka_kafka_1:9093 --topic rails_network --from-beginning
 ```
 
 This Repo was initialized using the National Rail Open Data Python Example (https://github.com/openraildata/stomp-client-python/tree/main)
@@ -60,9 +50,20 @@ Notice the generated xml parsing class files (_ct.py, _ct2.py, _ct3.py, etc). Ex
 
 In the main client (opendata-nationalrail-client.py), you can import these individual files, and then bind the xml to these classes. See how to do so in the `on_message()` function.
 
-Run the consumer
+Run the job
 ======================================
 ```bash
 docker exec -it jobmanager flink run --python /opt/flink/usrcode/job.py --parallelism 1
+docker exec -it jobmanager flink run --python /opt/flink/usrcode/job2.py --parallelism 1
+
 ```
 
+Confirm pipeline jars
+=================
+
+```bash
+docker exec -it jobmanager bash
+
+cd /opt/flink/lib
+ls
+```
