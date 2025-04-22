@@ -49,6 +49,11 @@ PASSWORD = os.getenv('PASSWORD')
 HOSTNAME = os.getenv('HOSTNAME')
 HOSTPORT = os.getenv('HOSTPORT')
 TOPIC = os.getenv('TOPIC')
+KAFKA_PRODUCER_TOPIC = os.getenv('KAFKA_PRODUCER_TOPIC')
+
+if not KAFKA_PRODUCER_TOPIC:
+    logging.error("KAFKA_PRODUCER_TOPIC not set - please configure your Kafka producer topic in the environment variables!")
+    exit(1)
 
 CLIENT_ID = socket.getfqdn()
 HEARTBEAT_INTERVAL_MS = 15000

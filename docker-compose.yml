@@ -5,6 +5,7 @@ services:
       dockerfile: flink.Dockerfile
     container_name: taskmanager
     hostname: taskmanager
+    user: "${UID}:${GID}"
     depends_on:
       - jobmanager
     command: taskmanager
@@ -14,6 +15,8 @@ services:
         FLINK_PROPERTIES=
         jobmanager.rpc.address: jobmanager
         taskmanager.numberOfTaskSlots: 6
+    volumes:
+      - ./src/usrcode:/opt/flink/usrcode
 
   jobmanager:
     build:
@@ -21,6 +24,7 @@ services:
       dockerfile: flink.Dockerfile
     container_name: jobmanager
     hostname: jobmanager
+    user: "${UID}:${GID}"
     ports:
       - "8082:8082"
     command: jobmanager
@@ -31,8 +35,7 @@ services:
         rest.address: jobmanager
         rest.port: 8082
     volumes:
-      - ./src/pipeline/job.py:/opt/flink/usrcode/job.py
-      - ./src/pipeline/job2.py:/opt/flink/usrcode/job2.py
+      - ./src/usrcode:/opt/flink/usrcode
 
   zookeeper:
     image: wurstmeister/zookeeper:latest

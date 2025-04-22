@@ -4,15 +4,21 @@ What is this?
 This a Flink-Kafka stack setup for analyzing the Network Rails feed. Follow the instructions to start consuming the feed and conducting analysis with the Flink SQL CLI.
 
 
+Set env variables beforehand
+=====================================
+
+```bash
+export UID=$(id -u)
+export GID=$(id -g)
+```
+
+These will ensure in development, you can freely edit `./src/pipeline` files/jobs.
+
 Start the dockerized enviroment
 =====================================
 
 ```bash
-# First, build the image
-docker build -t flink -f flink.Dockerfile .
-
-# then, use the docker compose file to create the enviroment
-docker-compose up -d
+docker-compose up -d --build
 ```
 
 Connect to the WebUI
@@ -38,32 +44,25 @@ Check produced messages
 You can test check if the messages have been produced with:
 
 ```bash
-docker exec -it network-rails-flink-kafka_kafka_1 kafka-console-consumer.sh --bootstrap-server network-rails-flink-kafka_kafka_1:9093 --topic rails_network --from-beginning
+docker exec -it network-rails-flink-kafka_kafka_1 kafka-console-consumer.sh --bootstrap-server network-rails-flink-kafka_kafka_1:9093 --topic rail_network --from-beginning
 ```
 
 This Repo was initialized using the National Rail Open Data Python Example (https://github.com/openraildata/stomp-client-python/tree/main)
 
-How to use 
+Run the jobs
 ======================================
 
-Notice the generated xml parsing class files (_ct.py, _ct2.py, _ct3.py, etc). Explore them and see the different attributes they each offer.
+`src/usrcode` will automatically be mounted to the docker container. Create new jobs/files to upload there. Below is an example of how to run the existing jobs:
 
-In the main client (opendata-nationalrail-client.py), you can import these individual files, and then bind the xml to these classes. See how to do so in the `on_message()` function.
-
-Run the job
-======================================
 ```bash
 docker exec -it jobmanager flink run --python /opt/flink/usrcode/job.py --parallelism 1
 docker exec -it jobmanager flink run --python /opt/flink/usrcode/job2.py --parallelism 1
-
+# add more jobs, etc...
 ```
 
-Confirm pipeline jars
+Confirm Flink libraries
 =================
 
 ```bash
-docker exec -it jobmanager bash
-
-cd /opt/flink/lib
-ls
+docker exec -it jobmanager bash -c "cd /opt/flink/lib && ls"
 ```
