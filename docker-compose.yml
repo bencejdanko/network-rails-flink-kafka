@@ -1,10 +1,11 @@
 services:
   taskmanager:
     build:
-      context: ../../
-      dockerfile: installations/flink/flink.Dockerfile
+      context: ./
+      dockerfile: flink.Dockerfile
     container_name: taskmanager
     hostname: taskmanager
+    user: "${UID}:${GID}"
     depends_on:
       - jobmanager
     command: taskmanager
@@ -14,13 +15,16 @@ services:
         FLINK_PROPERTIES=
         jobmanager.rpc.address: jobmanager
         taskmanager.numberOfTaskSlots: 6
+    volumes:
+      - ./src/usrcode:/opt/flink/usrcode
 
   jobmanager:
     build:
-      context: ../../
-      dockerfile: installations/flink/flink.Dockerfile
+      context: ./
+      dockerfile: flink.Dockerfile
     container_name: jobmanager
     hostname: jobmanager
+    user: "${UID}:${GID}"
     ports:
       - "8082:8082"
     command: jobmanager
@@ -31,7 +35,7 @@ services:
         rest.address: jobmanager
         rest.port: 8082
     volumes:
-      - ../../src/pipeline/job.py:/opt/flink/usrcode/job.py
+      - ./src/usrcode:/opt/flink/usrcode
 
   zookeeper:
     image: wurstmeister/zookeeper:latest
@@ -50,6 +54,6 @@ services:
       KAFKA_LISTENERS: INSIDE://0.0.0.0:9093,OUTSIDE://0.0.0.0:9092
       KAFKA_INTER_BROKER_LISTENER_NAME: INSIDE
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_CREATE_TOPICS: "input-topic:1:1,output-topic:1:1"
+      KAFKA_CREATE_TOPICS: "rail_network:1:1,output-topic:1:1"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock

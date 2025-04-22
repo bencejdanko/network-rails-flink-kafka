@@ -1,0 +1,2 @@
+PyXB-X==1.2.6.3
+apache-flink==2.0.0
