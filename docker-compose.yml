@@ -10,12 +10,16 @@ services:
     depends_on:
       - jobmanager
     command: /opt/flink/bin/taskmanager.sh start-foreground
+    privileged: true
+    cap_add:
+      - SYS_ADMIN
+    devices:
+      - /dev/fuse
     scale: 1
     environment:
-      - |
-        FLINK_PROPERTIES=
-        jobmanager.rpc.address: jobmanager
-        taskmanager.numberOfTaskSlots: 6
+      - jobmanager.rpc.address=jobmanager
+      - taskmanager.numberOfTaskSlots=6
+      - parallelism.default=1
       - JUICEFS_META_URL=redis://redis:6379/1
       - JUICEFS_STORAGE=s3
       - JUICEFS_BUCKET=my-juicefs-bucket
@@ -36,17 +40,20 @@ services:
     ports:
       - "8081:8081"
     command: /opt/flink/bin/jobmanager.sh start-foreground
+    privileged: true
+    cap_add:
+      - SYS_ADMIN
+    devices:
+      - /dev/fuse
     environment:
-      - |
-        FLINK_PROPERTIES=
-        jobmanager.rpc.address: jobmanager
-        rest.address: jobmanager
-        rest.port: 8082
+      - jobmanager.rpc.address=jobmanager
+      - rest.address=jobmanager
+      - rest.port=8082
       - JUICEFS_META_URL=redis://redis:6379/1
       - JUICEFS_STORAGE=s3
       - JUICEFS_BUCKET=my-juicefs-bucket
-      - JUICEFS_ACCESS_KEY=AKIA6JKEYBLHOLKMTR7B
-      - JUICEFS_SECRET_KEY=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
+      - JUICEFS_ACCESS_KEY=${JUICEFS_ACCESS_KEY}
+      - JUICEFS_SECRET_KEY=${JUICEFS_SECRET_KEY}
     volumes:
       - ./src/usrcode:/opt/flink/usrcode
       - juicefs_mount:/mnt/jfs
