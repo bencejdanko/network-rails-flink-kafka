@@ -1,5 +1,6 @@
 services:
   taskmanager:
+    platform: linux/amd64
     build:
       context: ./
       dockerfile: flink.Dockerfile
@@ -8,17 +9,24 @@ services:
     user: "${UID}:${GID}"
     depends_on:
       - jobmanager
-    command: taskmanager
+    command: /opt/flink/bin/taskmanager.sh start-foreground
     scale: 1
     environment:
       - |
         FLINK_PROPERTIES=
         jobmanager.rpc.address: jobmanager
         taskmanager.numberOfTaskSlots: 6
+      - JUICEFS_META_URL=redis://redis:6379/1
+      - JUICEFS_STORAGE=s3
+      - JUICEFS_BUCKET=my-juicefs-bucket
+      - JUICEFS_ACCESS_KEY=AKIA6JKEYBLHOLKMTR7B
+      - JUICEFS_SECRET_KEY=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
     volumes:
       - ./src/usrcode:/opt/flink/usrcode
+      - juicefs_mount:/mnt/jfs
 
   jobmanager:
+    platform: linux/amd64
     build:
       context: ./
       dockerfile: flink.Dockerfile
@@ -26,16 +34,29 @@ services:
     hostname: jobmanager
     user: "${UID}:${GID}"
     ports:
-      - "8082:8082"
-    command: jobmanager
+      - "8081:8081"
+    command: /opt/flink/bin/jobmanager.sh start-foreground
     environment:
       - |
         FLINK_PROPERTIES=
         jobmanager.rpc.address: jobmanager
         rest.address: jobmanager
         rest.port: 8082
+      - JUICEFS_META_URL=redis://redis:6379/1
+      - JUICEFS_STORAGE=s3
+      - JUICEFS_BUCKET=my-juicefs-bucket
+      - JUICEFS_ACCESS_KEY=AKIA6JKEYBLHOLKMTR7B
+      - JUICEFS_SECRET_KEY=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
     volumes:
       - ./src/usrcode:/opt/flink/usrcode
+      - juicefs_mount:/mnt/jfs
+
+  redis:
+    image: redis:latest
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
 
   zookeeper:
     image: wurstmeister/zookeeper:latest
@@ -57,3 +78,7 @@ services:
       KAFKA_CREATE_TOPICS: "rail_network:1:1,output-topic:1:1"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
+
+volumes:
+  redis_data:
+  juicefs_mount:

@@ -11,7 +11,9 @@ USER root
 
 # Install dependencies (keep your existing RUN command)
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends python3 python3-pip sudo && \
+    apt-get install -y --no-install-recommends ubuntu-keyring && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends python3 python3-pip sudo fuse3 && \
     rm -rf /var/lib/apt/lists/*
 
 # Create the group and user if they don't exist
@@ -28,6 +30,20 @@ RUN chmod -R o+w /opt/flink/log /opt/flink/conf /opt/flink/plugins
 
 # === Continue with your setup ===
 RUN ln -s /usr/bin/python3 /usr/bin/python
+
+# Install dependencies and JuiceFS client
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends curl fuse ca-certificates && \
+    rm -rf /var/lib/apt/lists/* && \
+    mkdir /juicefs && cd /juicefs && \
+    JFS_LATEST_TAG=$(curl -s https://api.github.com/repos/juicedata/juicefs/releases/latest | grep 'tag_name' | cut -d '"' -f 4 | tr -d 'v') && \
+    curl -s -L https://github.com/juicedata/juicefs/releases/download/v${JFS_LATEST_TAG}/juicefs-${JFS_LATEST_TAG}-linux-amd64.tar.gz | tar -zx && \
+    install juicefs /usr/local/bin && \
+    cd / && rm -rf /juicefs
+
+# Create JuiceFS mount point
+RUN mkdir -p /mnt/jfs && \
+    chown -R $USER_UID:$USER_GID /mnt/jfs
 
 # Install pip packages as the target user to avoid permission issues in site-packages later
 # Note: If pip needs root, you might need to do this before the chown/user switch or use sudo
@@ -51,3 +67,10 @@ RUN wget -P /opt/flink/lib https://repo.maven.apache.org/maven2/org/apache/flink
 COPY requirements.txt /opt/flink/requirements.txt
 WORKDIR /opt/flink
 RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy entrypoint script and make it executable
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+# Use it as the default entrypoint
+ENTRYPOINT ["/entrypoint.sh"]
