@@ -6,7 +6,7 @@ from forecast_parser import parse_and_extract
 producer = KafkaProducer(bootstrap_servers='localhost:9092')
 
 def send_to_kafka(topic, data):
-    """Send the extracted data to Kafka."""
+    #Send the extracted data to Kafka.
     try:
         producer.send(topic, value=json.dumps(data).encode())
         print(f"Data sent to {topic}: {data}")
@@ -14,7 +14,7 @@ def send_to_kafka(topic, data):
         print(f"Error sending data to Kafka: {e}")
 
 def process_message(xml_string, message_type='schedule'):
-    """Process the message based on type and send it to the appropriate Kafka topic."""
+    #Process the message based on type and send it to the appropriate Kafka topic
     extracted_data = parse_and_extract(xml_string, message_type)
     
     if extracted_data:
