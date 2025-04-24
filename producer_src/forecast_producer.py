@@ -1,6 +1,6 @@
 import json
 from kafka import KafkaProducer
-from forecast_parser import parse_and_extract 
+from parser import parse_and_extract 
 
 # Initialize Kafka Producer
 producer = KafkaProducer(bootstrap_servers='localhost:9092')
