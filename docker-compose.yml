@@ -19,8 +19,8 @@ services:
       - JUICEFS_META_URL=redis://redis:6379/1
       - JUICEFS_STORAGE=s3
       - JUICEFS_BUCKET=my-juicefs-bucket
-      - JUICEFS_ACCESS_KEY=AKIA6JKEYBLHOLKMTR7B
-      - JUICEFS_SECRET_KEY=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
+      - JUICEFS_ACCESS_KEY=${JUICEFS_ACCESS_KEY}
+      - JUICEFS_SECRET_KEY=${JUICEFS_SECRET_KEY}
     volumes:
       - ./src/usrcode:/opt/flink/usrcode
       - juicefs_mount:/mnt/jfs
