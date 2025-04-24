@@ -21,8 +21,6 @@ services:
         jobmanager.rpc.address: jobmanager
         taskmanager.numberOfTaskSlots: 6
 
-      - USER_GID=${UID}
-      - GROUP_GID=${GID}
       - JUICEFS_META_URL=${JUICEFS_META_URL}
       - AWS_URI=${AWS_URI}
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
@@ -52,8 +50,6 @@ services:
         rest.address: jobmanager
         rest.port: 8082
 
-      - USER_ID=${UID}
-      - GROUP_ID=${GID}
       - JUICEFS_META_URL=${JUICEFS_META_URL}
       - AWS_URI=${AWS_URI}
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
