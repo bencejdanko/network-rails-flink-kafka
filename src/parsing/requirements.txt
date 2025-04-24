@@ -1,2 +1,0 @@
-kafka-python==2.1.5
-PyXB-X==1.2.6.3

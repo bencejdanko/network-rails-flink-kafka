@@ -4,12 +4,11 @@ services:
     build:
       context: ./
       dockerfile: flink.Dockerfile
-    container_name: taskmanager
+    container_name: network-rails.taskmanager
     hostname: taskmanager
-    user: "${UID}:${GID}"
     depends_on:
       - jobmanager
-    command: /opt/flink/bin/taskmanager.sh start-foreground
+    command: taskmanager
     privileged: true
     cap_add:
       - SYS_ADMIN
@@ -17,49 +16,54 @@ services:
       - /dev/fuse
     scale: 1
     environment:
-      - jobmanager.rpc.address=jobmanager
-      - taskmanager.numberOfTaskSlots=6
-      - parallelism.default=1
-      - JUICEFS_META_URL=redis://redis:6379/1
-      - JUICEFS_STORAGE=s3
-      - JUICEFS_BUCKET=my-juicefs-bucket
-      - JUICEFS_ACCESS_KEY=${JUICEFS_ACCESS_KEY}
-      - JUICEFS_SECRET_KEY=${JUICEFS_SECRET_KEY}
+      - |
+        FLINK_PROPERTIES=
+        jobmanager.rpc.address: jobmanager
+        taskmanager.numberOfTaskSlots: 6
+
+      - USER_GID=${UID}
+      - GROUP_GID=${GID}
+      - JUICEFS_META_URL=${JUICEFS_META_URL}
+      - AWS_URI=${AWS_URI}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
     volumes:
       - ./src/usrcode:/opt/flink/usrcode
-      - juicefs_mount:/mnt/jfs
 
   jobmanager:
     platform: linux/amd64
     build:
       context: ./
       dockerfile: flink.Dockerfile
-    container_name: jobmanager
+    container_name: network-rails.jobmanager
     hostname: jobmanager
-    user: "${UID}:${GID}"
     ports:
-      - "8081:8081"
-    command: /opt/flink/bin/jobmanager.sh start-foreground
+      - "8082:8082"
+    command: jobmanager
     privileged: true
     cap_add:
       - SYS_ADMIN
     devices:
       - /dev/fuse
     environment:
-      - jobmanager.rpc.address=jobmanager
-      - rest.address=jobmanager
-      - rest.port=8082
-      - JUICEFS_META_URL=redis://redis:6379/1
-      - JUICEFS_STORAGE=s3
-      - JUICEFS_BUCKET=my-juicefs-bucket
-      - JUICEFS_ACCESS_KEY=${JUICEFS_ACCESS_KEY}
-      - JUICEFS_SECRET_KEY=${JUICEFS_SECRET_KEY}
+      - |
+        FLINK_PROPERTIES=
+        jobmanager.rpc.address: jobmanager
+        rest.address: jobmanager
+        rest.port: 8082
+
+      - USER_ID=${UID}
+      - GROUP_ID=${GID}
+      - JUICEFS_META_URL=${JUICEFS_META_URL}
+      - AWS_URI=${AWS_URI}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
     volumes:
       - ./src/usrcode:/opt/flink/usrcode
-      - juicefs_mount:/mnt/jfs
 
   redis:
     image: redis:latest
+    container_name: network-rails.redis
     ports:
       - "6379:6379"
     volumes:
@@ -67,11 +71,13 @@ services:
 
   zookeeper:
     image: wurstmeister/zookeeper:latest
+    container_name: network-rails.zookeeper
     ports:
       - "2181:2181"
 
   kafka:
     image: wurstmeister/kafka:latest
+    container_name: network-rails.kafka
     ports:
       - "9092:9092"
     expose:
@@ -85,7 +91,25 @@ services:
       KAFKA_CREATE_TOPICS: "rail_network:1:1,output-topic:1:1"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
+    
+  minio:
+    image: quay.io/minio/minio
+    container_name: network-rails.minio
+    ports:
+      - "9000:9000" # API port
+      - "9001:9001" # Console port
+    environment:
+      # Root credentials for MinIO
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER} # Default user if not set in .env
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD} # Default password if not set in .env
+      # Bucket to create on startup
+      MINIO_DEFAULT_BUCKET: ${MINIO_DEFAULT_BUCKET} # Default bucket name if not set in .env
+    # Command to start MinIO server and expose the console
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+
 
 volumes:
   redis_data:
-  juicefs_mount:
+  minio_data:

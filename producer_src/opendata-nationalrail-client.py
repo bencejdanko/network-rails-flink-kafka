@@ -156,7 +156,7 @@ class StompClient(stomp.ConnectionListener):
             msg = zlib.decompress(frame.body, zlib.MAX_WBITS | 32)
             obj = pyxb_bindings._sch3.CreateFromDocument(msg)
             print(obj)
-            producer.send("rail_network", msg)
+            producer.send(KAFKA_PRODUCER_TOPIC, msg)
 
         except Exception as e:
             logging.error(str(e))
