@@ -108,6 +108,12 @@
             <version>${log4j.version}</version>
             <scope>runtime</scope>
         </dependency>
+
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-math3</artifactId>
+            <version>3.6.1</version> <!-- Use a recent stable version -->
+        </dependency>
     </dependencies>
 
     <build>
