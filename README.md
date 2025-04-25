@@ -90,6 +90,10 @@ Examples:
 ./manage-flink-job.sh \
     -m com.sjsu.flink.StreamingLSHJob \
     -n "LSH binning"
+
+./manage-flink-job.sh \
+    -m com.sjsu.flink.SimilarityCalculationJob \
+    -n "Calculate similarities"
 ```
 
 ---
@@ -127,7 +131,9 @@ docker exec -it network-rails.kafka kafka-console-consumer.sh --bootstrap-server
 docker exec -it network-rails.kafka kafka-console-consumer.sh --bootstrap-server network-rails.kafka:9093 --topic rtti-schedule --from-beginning
 docker exec -it network-rails.kafka kafka-console-consumer.sh --bootstrap-server network-rails.kafka:9093 --topic rtti-ts --from-beginning
 docker exec -it network-rails.kafka kafka-console-consumer.sh --bootstrap-server network-rails.kafka:9093 --topic rtti-joined --from-beginning
-docker exec -it network-rails.kafka kafka-console-consumer.sh --bootstrap-server network-rails.kafka:9093 --topic rtti-lsh-results --from-beginning
+docker exec -it network-rails.kafka kafka-console-consumer.sh --bootstrap-server network-rails.kafka:9093 --topic rtti-lsh-signature --from-beginning
+docker exec -it network-rails.kafka kafka-console-consumer.sh --bootstrap-server network-rails.kafka:9093 --topic rtti-lsh-similarity --from-beginning
+
 ```
 
 This Repo was initialized using the National Rail Open Data Python Example (https://github.com/openraildata/stomp-client-python/tree/main)

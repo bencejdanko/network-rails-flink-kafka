@@ -27,9 +27,9 @@ public class StreamingLSHJob {
             // --- Configuration ---
             final String kafkaBootstrapServers = "kafka:9093"; // Ensure this is correct
             final String sourceTopic = "rtti-joined"; // Your input topic
-            final String sinkTopic = "rtti-lsh-results";   // Output topic remains the same
+            final String sinkTopic = "rtti-lsh-signature";   // Output topic remains the same
             final String consumerGroupId = "flink-lsh-group-java-minhash"; // Changed group id slightly
-            final long windowMinutes = 5L; // 5-minute window
+            final long windowMinutes = 1L; // 1-minute window
             final int numHashFunctions = 128; // *** Configure signature size ***
             final long hashFunctionSeed = 42L; // *** Configure seed for reproducibility ***
 
