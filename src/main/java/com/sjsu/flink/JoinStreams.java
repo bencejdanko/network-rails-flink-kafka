@@ -7,7 +7,6 @@ import org.apache.flink.api.common.functions.FlatMapFunction;
 import org.apache.flink.api.common.functions.JoinFunction;
 import org.apache.flink.api.common.serialization.SimpleStringSchema;
 import org.apache.flink.api.java.tuple.Tuple3;
-// import org.apache.flink.api.java.utils.ParameterTool; // No longer needed
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.windowing.assigners.TumblingEventTimeWindows;
@@ -39,7 +38,7 @@ public class JoinStreams {
         final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
 
         // --- Configuration ---
-        String kafkaBootstrapServers = "kafka:9092";  
+        String kafkaBootstrapServers = "kafka:9093";  
         String scheduleTopic = "rtti-schedule";     
         String tsTopic = "rtti-ts";                 
         String outputTopic = "rtti-joined";          
