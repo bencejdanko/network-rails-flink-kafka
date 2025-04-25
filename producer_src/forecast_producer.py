@@ -19,8 +19,11 @@ producer = KafkaProducer(bootstrap_servers=f'localhost:{9092}')
 logging.basicConfig(format='%(asctime)s %(levelname)s\t%(message)s', level=logging.INFO)
 
 try:
-    import pyxb_bindings._ct2
+    # Corrected import path for PPv16 binding
     import PPv16 as pushport_bindings
+    # Assuming other bindings like _ct2 and _for are also directly accessible or handled by pyxb
+    import pyxb_bindings._ct2
+    import pyxb_bindings._for
 
 except ModuleNotFoundError:
     logging.error("Class files not found - please configure the client following steps in README.md!")
@@ -43,57 +46,64 @@ HEARTBEAT_INTERVAL_MS = 15000
 RECONNECT_DELAY_SECS = 15
 
 def transform_ts_message(train_status_obj):
+    transformed_station_updates = []
+
     try:
+        # --- Temporarily print attributes of the train_status_obj for inspection ---
+        # print("\n--- Attributes of Individual Train Status Object ---")
+        # print(dir(train_status_obj))
+        # print("----------------------------------------------------\n")
+
         rid = getattr(train_status_obj, 'rid', None)
         uid = getattr(train_status_obj, 'uid', None)
-        ssd = getattr(train_status_obj, 'ssd', None)
 
-        station_updates = []
-        if hasattr(train_status_obj, 'Location') and isinstance(train_status_obj.Location, list):
-            for location in train_status_obj.Location:
+        locations_list = getattr(train_status_obj, 'Location', None)
+
+        if locations_list:
+            if not isinstance(locations_list, list):
+                locations_list = [locations_list]
+
+            for location in locations_list:
+                # --- Temporarily print attributes of the location object for inspection ---
+                print("\n--- Attributes of Location Object ---")
+                print(dir(location))
+                print("-------------------------------------\n")
+                # You will need to uncomment this to find the correct attribute names for tpl, pta, ptd, et, and at
+
+
                 tpl = getattr(location, 'tpl', None)
-                pta = getattr(location, 'pta', None)
-                ptd = getattr(location, 'ptd', None)
-                et = getattr(location, 'et', None)
-                at = getattr(location, 'at', None)
 
-                forecast_time = et if et is not None else at
+                pta_obj = getattr(location, 'pta', None)
+                pta_str = pta_obj.isoformat() if pta_obj is not None and hasattr(pta_obj, 'isoformat') else None
 
-                station_updates.append({
+                ptd_obj = getattr(location, 'ptd', None)
+                ptd_str = ptd_obj.isoformat() if ptd_obj is not None and hasattr(ptd_obj, 'isoformat') else None
+
+                et_obj = getattr(location, 'et', None)
+                et_str = et_obj.isoformat() if et_obj is not None and hasattr(et_obj, 'isoformat') else None
+
+                at_obj = getattr(location, 'at', None)
+                at_str = at_obj.isoformat() if at_obj is not None and hasattr(at_obj, 'isoformat') else None
+
+                forecast_time_str = et_str if et_str is not None else at_str
+
+                transformed_station_updates.append({
+                    "rid": rid,
+                    "uid": uid,
                     "tpl": tpl,
-                    "pta": pta,
-                    "ptd": ptd,
-                    "forecast_time": forecast_time
-                })
-        elif hasattr(train_status_obj, 'Location') and not isinstance(train_status_obj.Location, list):
-             location = train_status_obj.Location
-             tpl = getattr(location, 'tpl', None)
-             pta = getattr(location, 'pta', None)
-             ptd = getattr(location, 'ptd', None)
-             et = getattr(location, 'et', None)
-             at = getattr(location, 'at', None)
-             forecast_time = et if et is not None else at
-             station_updates.append({
-                    "tpl": tpl,
-                    "pta": pta,
-                    "ptd": ptd,
-                    "forecast_time": forecast_time
+                    "pta": pta_str,
+                    "ptd": ptd_str,
+                    "forecast_time": forecast_time_str
                 })
 
-        transformed_data = {
-            "rid": rid,
-            "uid": uid,
-            "ssd": ssd,
-            "station_updates": station_updates
-        }
-        return transformed_data
+        return transformed_station_updates
 
     except AttributeError as ae:
-         logging.error(f"Attribute error during TS message transformation: {ae}. Check pyxb binding structure.")
-         return None
+         logging.error(f"Attribute error during TS message transformation: {ae}. Check pyxb binding structure for individual <TS> element or location object using the dir() output.")
+         return []
     except Exception as e:
         logging.error(f"Error transforming TS message: {e}")
-        return None
+        return []
 
 def connect_and_subscribe(connection):
     if stomp.__version__[0] < '5':
@@ -144,49 +154,69 @@ class StompClient(stomp.ConnectionListener):
 
             pushport_obj = pushport_bindings.CreateFromDocument(msg)
 
-      
-            print("\n--- Parsed Push Port Object Structure ---")
-            print(pushport_obj)
-            print("-----------------------------------------\n")
 
-            # print(dir(pushport_obj))
-            if message_type == 'TS':
-                logging.info("Processing TS message...")
-                try:
-                    train_status_obj = getattr(pushport_obj, 'ts', None)
+            # --- Print the parsed root object and its attributes for inspection ---
+            # print("\n--- Parsed Push Port Object Structure ---")
+            # print(pushport_obj)
+            # print("-----------------------------------------\n")
+            # print(dir(pushport_obj)) # Uncomment temporarily to see available attributes
 
-                    if train_status_obj:
-                        transformed_data = transform_ts_message(train_status_obj)
-                        print("\n--- Transformed TS Message ---")
-                        print(transformed_data)
-                        print("------------------------------\n")
-                        if transformed_data:
-                            json_payload = json.dumps(transformed_data).encode('utf-8')
-                            producer.send(KAFKA_TS_TOPIC, json_payload)
-                            logging.info(f"Produced TS message for RID {transformed_data.get('rid')} to Kafka topic {KAFKA_TS_TOPIC}")
-                        else:
-                             logging.warning("TS message transformation failed or returned None.")
-                    else:
-                         logging.warning("TS message received but TrainStatus object not found on Push Port object.")
+            update_messages_container = getattr(pushport_obj, 'uR', None)
 
-                except Exception as process_e:
-                    logging.error(f"Error processing TS message from Push Port object: {process_e}")
 
-            elif message_type == 'SF':
-                 logging.info("Ignoring SF message type.")
+            update_messages_list = []
+            if update_messages_container:
+                if isinstance(update_messages_container, list):
+                    update_messages_list = update_messages_container
+                else:
+                    update_messages_list = [update_messages_container]
+
+            for message in update_messages_list:
+                if hasattr(message, 'TS') and message.TS is not None:
+                    logging.info("Found Train Status (TS) data within a message in uR.")
+                    try:
+                        ts_list_obj = message.TS
+
+                        for train_status_obj in ts_list_obj:
+                            transformed_station_data_list = transform_ts_message(train_status_obj)
+
+                            if transformed_station_data_list:
+                                # --- Print the transformed JSON data for verification ---
+                                # Print each flat station update JSON separately
+                                for station_data in transformed_station_data_list:
+                                    # --- Temporarily print types of values in the dictionary before JSON serialization ---
+                                    # print("--- Types of values in station_data dictionary ---")
+                                    # for key, value in station_data.items():
+                                    #     if not isinstance(value, (str, int, float, bool, type(None), list, dict)):
+                                    #          print(f"Key: {key}, Type: {type(value)}")
+                                    # print("--------------------------------------------------\n")
+
+                                    print("\n--- Transformed TS Station Message ---")
+                                    print(json.dumps(station_data, indent=2))
+                                    print("--------------------------------------\n")
+
+                                    json_payload = json.dumps(station_data).encode('utf-8')
+                                    producer.send(KAFKA_TS_TOPIC, json_payload)
+                                    logging.info(f"Produced TS station message for RID {station_data.get('rid')} TPL {station_data.get('tpl')} to Kafka topic {KAFKA_TS_TOPIC}")
+                            else:
+                                 logging.warning(f"TS message transformation completed for a train but no station updates were found or transformation failed.")
+
+                    except Exception as process_e:
+                        logging.error(f"Error processing specific TS message: {process_e}")
+
+            if message_type == 'SC':
+                 logging.info("Ignoring Schedule (SC) message type.")
                  pass
-
-            elif message_type == 'AS':
-                 logging.info("Ignoring AS message type.")
+            elif message_type == 'AS' and not update_messages_list:
+                 logging.info("Ignoring top-level Association (AS) message type.")
                  pass
-
-            else:
+            elif message_type not in ['TS', 'SC', 'AS']:
                 logging.info(f"Received unhandled message type: {message_type}")
 
         except zlib.error as zlib_e:
             logging.error(f"Zlib decompression error: {zlib_e}")
         except Exception as general_e:
-            logging.error(f"General error processing message (during Push Port parsing): {general_e}")
+            logging.error(f"General error processing message: {general_e}")
 
 if __name__ == "__main__":
     conn = stomp.Connection12([(HOSTNAME, HOSTPORT)],
@@ -207,7 +237,3 @@ if __name__ == "__main__":
 
     logging.info("Client shutting down.")
     conn.disconnect()
-
-# Process and send to Kafka
-process_message(xml_schedule, 'schedule')
-process_message(xml_forecast, 'forecast')
