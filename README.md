@@ -94,6 +94,10 @@ Examples:
 ./manage-flink-job.sh \
     -m com.sjsu.flink.SimilarityCalculationJob \
     -n "Calculate similarities"
+
+./manage-flink-job.sh \
+    -m com.sjsu.flink.BloomFilterJob \
+    -n "Bloom filter"
 ```
 
 ---
@@ -134,6 +138,7 @@ docker exec -it network-rails.kafka kafka-console-consumer.sh --bootstrap-server
 docker exec -it network-rails.kafka kafka-console-consumer.sh --bootstrap-server network-rails.kafka:9093 --topic rtti-lsh-signature --from-beginning
 docker exec -it network-rails.kafka kafka-console-consumer.sh --bootstrap-server network-rails.kafka:9093 --topic rtti-lsh-similarity --from-beginning
 
+docker exec -it network-rails.kafka kafka-console-consumer.sh --bootstrap-server network-rails.kafka:9093 --topic rtti-bloomfilter-results --from-beginning
 ```
 
 This Repo was initialized using the National Rail Open Data Python Example (https://github.com/openraildata/stomp-client-python/tree/main)
