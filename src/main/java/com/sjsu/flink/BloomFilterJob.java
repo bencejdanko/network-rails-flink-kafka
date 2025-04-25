@@ -68,7 +68,7 @@ public class BloomFilterJob {
 
             // 3. Define Kafka Sink Table DDL (Output rid, window, filter)
             final String kafkaSinkDDL = String.format(
-                "CREATE TABLE kafka_sink (" +
+                "CREATE TABLE kafka_bloom_sink (" +
                 "  rid STRING," +
                 "  window_end STRING," +
                 "  bloom_filter_base64 STRING," + // Store the Base64 encoded filter
