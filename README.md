@@ -82,6 +82,10 @@ Examples:
 ./manage-flink-job.sh \
     -m com.sjsu.flink.KafkaToJuice \
     -n "Kafka To Juice Operations on network_rail"
+
+./manage-flink-job.sh \
+    -m com.sjsu.flink.JoinStreams \
+    -n "Join produced topics"
 ```
 
 ---
@@ -117,8 +121,9 @@ You can test check if the messages have been produced with:
 ```bash
 docker exec -it network-rails.kafka kafka-console-consumer.sh --bootstrap-server network-rails.kafka:9093 --topic rail_network --from-beginning
 docker exec -it network-rails.kafka kafka-console-consumer.sh --bootstrap-server network-rails.kafka:9093 --topic rtti-schedule --from-beginning
-
 docker exec -it network-rails.kafka kafka-console-consumer.sh --bootstrap-server network-rails.kafka:9093 --topic rtti-ts --from-beginning
+docker exec -it network-rails.kafka kafka-console-consumer.sh --bootstrap-server network-rails.kafka:9093 --topic rtti-joined --from-beginning
+
 
 ```
 

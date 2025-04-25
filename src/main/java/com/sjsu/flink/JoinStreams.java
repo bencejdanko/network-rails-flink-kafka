@@ -110,15 +110,24 @@ public class JoinStreams {
                             JsonNode scheduleJson = objectMapper.readTree(schedule.f2);
                             JsonNode tsJson = objectMapper.readTree(ts.f2);
 
-                            // Format output string, checking for null fields
-                            return String.format("Joined rid=%s: Schedule(uid=%s, tpl=%s) | TS(tpl=%s, event=%s, actual=%s)",
+                            // Construct the output JSON string
+                            return String.format("{\"rid\":\"%s\", \"uid\":\"%s\", \"sch_tpl\":\"%s\", \"sch_wta\":\"%s\", \"sch_wtd\":\"%s\", \"sch_wtp\":\"%s\", \"ts_tpl\":\"%s\", \"ts_pta\":\"%s\", \"ts_ptd\":\"%s\", \"ts_wta\":\"%s\", \"ts_wtd\":\"%s\", \"ts_wtp\":\"%s\", \"event_type\":\"%s\", \"actual_time\":\"%s\"}",
                                     schedule.f0, // rid (from key)
-                                    scheduleJson.hasNonNull("uid") ? scheduleJson.get("uid").asText() : "N/A",
-                                    scheduleJson.hasNonNull("tpl") ? scheduleJson.get("tpl").asText() : "N/A",
-                                    tsJson.hasNonNull("tpl") ? tsJson.get("tpl").asText() : "N/A",
-                                    tsJson.hasNonNull("event_type") ? tsJson.get("event_type").asText() : "N/A",
-                                    tsJson.hasNonNull("actual_time") ? tsJson.get("actual_time").asText() : "N/A"
+                                    scheduleJson.hasNonNull("uid") ? scheduleJson.get("uid").asText() : "null", // sch_uid
+                                    scheduleJson.hasNonNull("tpl") ? scheduleJson.get("tpl").asText() : "null", // sch_tpl
+                                    scheduleJson.hasNonNull("wta") ? scheduleJson.get("wta").asText() : "null", // sch_wta
+                                    scheduleJson.hasNonNull("wtd") ? scheduleJson.get("wtd").asText() : "null", // sch_wtd
+                                    scheduleJson.hasNonNull("wtp") ? scheduleJson.get("wtp").asText() : "null", // sch_wtp
+                                    tsJson.hasNonNull("tpl") ? tsJson.get("tpl").asText() : "null",             // ts_tpl
+                                    tsJson.hasNonNull("pta") ? tsJson.get("pta").asText() : "null",             // ts_pta
+                                    tsJson.hasNonNull("ptd") ? tsJson.get("ptd").asText() : "null",             // ts_ptd
+                                    tsJson.hasNonNull("wta") ? tsJson.get("wta").asText() : "null",             // ts_wta (planned times might also be in forecast)
+                                    tsJson.hasNonNull("wtd") ? tsJson.get("wtd").asText() : "null",             // ts_wtd
+                                    tsJson.hasNonNull("wtp") ? tsJson.get("wtp").asText() : "null",             // ts_wtp
+                                    tsJson.hasNonNull("event_type") ? tsJson.get("event_type").asText() : "null", // event_type
+                                    tsJson.hasNonNull("actual_time") ? tsJson.get("actual_time").asText() : "null" // actual_time
                             );
+
                         } catch (JsonProcessingException e) {
                              System.err.println("ERROR: Failed to parse JSON during join for rid=" + schedule.f0 + " | Error: " + e.getMessage());
                              // Return a default value or re-throw, depending on desired behavior
