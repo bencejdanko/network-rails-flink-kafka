@@ -169,7 +169,7 @@ public class BloomFilterJob {
             statementSet.addInsertSql(insertFsSQL);
 
 
-            // 8. Execute the StatementSet (NEW Structure)
+            // 8. Execute the StatementSet
             LOG.info("Executing StatementSet to start data flow to Kafka and Filesystem sinks...");
             statementSet.execute(); // Submits the job
             LOG.info("Flink job submitted and running.");
