@@ -116,6 +116,10 @@ You can test check if the messages have been produced with:
 
 ```bash
 docker exec -it network-rails.kafka kafka-console-consumer.sh --bootstrap-server network-rails.kafka:9093 --topic rail_network --from-beginning
+docker exec -it network-rails.kafka kafka-console-consumer.sh --bootstrap-server network-rails.kafka:9093 --topic rtti-schedule --from-beginning
+
+docker exec -it network-rails.kafka kafka-console-consumer.sh --bootstrap-server network-rails.kafka:9093 --topic rtti-ts --from-beginning
+
 ```
 
 This Repo was initialized using the National Rail Open Data Python Example (https://github.com/openraildata/stomp-client-python/tree/main)
