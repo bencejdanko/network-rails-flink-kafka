@@ -2,6 +2,7 @@ package com.sjsu.flink;
 
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.table.api.EnvironmentSettings;
+import org.apache.flink.table.api.StatementSet;
 import org.apache.flink.table.api.bridge.java.StreamTableEnvironment;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,7 +38,8 @@ public class BloomFilterJob {
             // --- Kafka Configuration ---
             final String kafkaBootstrapServers = "kafka:9093";
             final String sourceTopic = "rtti-joined";
-            final String sinkTopic = "rtti-bloomfilter-results"; // New output topic
+            final String kafkaSinkTopic = "rtti-bloomfilter-results"; // New output topic
+            final String fsSinkPath = "/mnt/jfs/bloomfilter_data";
             final String consumerGroupId = "flink-bloomfilter-group";
             final long windowMinutes = 1L; // Aggregation window
 
@@ -65,7 +67,7 @@ public class BloomFilterJob {
             LOG.info("Kafka source table '{}' created.", sourceTopic);
 
             // 3. Define Kafka Sink Table DDL (Output rid, window, filter)
-            final String sinkDDL = String.format(
+            final String kafkaSinkDDL = String.format(
                 "CREATE TABLE kafka_sink (" +
                 "  rid STRING," +
                 "  window_end STRING," +
@@ -77,18 +79,38 @@ public class BloomFilterJob {
                 "  'properties.bootstrap.servers' = '%s'," +
                 "  'key.format' = 'json'," +
                 "  'value.format' = 'json'" +
-                ")", sinkTopic, kafkaBootstrapServers
+                ")", kafkaSinkTopic, kafkaBootstrapServers
             );
-            LOG.info("Creating Kafka sink table DDL:\n{}", sinkDDL);
-            tEnv.executeSql(sinkDDL);
-            LOG.info("Kafka sink table '{}' created.", sinkTopic);
+            LOG.info("Creating Kafka sink table DDL:\n{}", kafkaSinkDDL);
+            tEnv.executeSql(kafkaSinkDDL);
+            LOG.info("Kafka sink table '{}' created.", kafkaSinkTopic);
 
-            // 4. Register the Bloom Filter Aggregate Function
+            // 4. Define Filesystem Sink Table DDL (Append Sink)
+            final String fsSinkDDL = String.format(
+                "CREATE TABLE filesystem_bloom_sink (" + 
+                "  rid STRING," +          
+                "  window_end STRING," +
+                "  bloom_filter_base64 STRING" +
+                ") WITH (" +
+                "  'connector' = 'filesystem'," +
+                "  'path' = '%s'," +    
+                "  'format' = 'json'," + 
+                "  'sink.rolling-policy.file-size' = '128MB'," + 
+                "  'sink.rolling-policy.rollover-interval' = '10 min'" + 
+                ")", fsSinkPath
+            );
+            LOG.info("Creating Filesystem sink table DDL:\n{}", fsSinkDDL);
+            tEnv.executeSql(fsSinkDDL);
+            LOG.info("Filesystem sink table created at path '{}'.", fsSinkPath);
+
+
+            // 5. Register the Bloom Filter Aggregate Function
             tEnv.createTemporarySystemFunction("BF_AGG",
                 new BloomFilterAggregateFunction(BLOOM_FILTER_SIZE, BLOOM_FILTER_HASHES, BLOOM_FILTER_SEED));
             LOG.info("Bloom Filter Aggregate Function registered.");
 
-            // 5. Define the windowed aggregation SQL
+            /*
+            // 6. Define the windowed aggregation SQL
             final String insertSQL = String.format(
                 "INSERT INTO kafka_sink " +
                 "SELECT " +
@@ -107,7 +129,51 @@ public class BloomFilterJob {
             LOG.info("Submitting INSERT INTO statement for Bloom Filter aggregation:\n{}", insertSQL);
             tEnv.executeSql(insertSQL);
             LOG.info("SQL query submitted for Bloom Filter generation.");
+            */
 
+            // 6. Define the aggregation logic as a VIEW 
+            final String viewDDL = String.format(
+                "CREATE TEMPORARY VIEW bloom_filter_results_view AS " +
+                "SELECT " +
+                "  rid, " +
+                "  CAST(window_end AS STRING) AS window_end, " +
+                "  BF_AGG(ts_tpl) AS bloom_filter_base64 " + 
+                "FROM TABLE(" +
+                "  TUMBLE(TABLE kafka_source, DESCRIPTOR(proctime), INTERVAL '%d' MINUTES)" +
+                ") " +
+                "WHERE rid IS NOT NULL " + 
+                "GROUP BY rid, window_start, window_end", // Group by train and window
+                windowMinutes
+             );
+            LOG.info("Creating TEMPORARY VIEW bloom_filter_results_view with DDL:\n{}", viewDDL);
+            tEnv.executeSql(viewDDL);
+            LOG.info("Temporary view 'bloom_filter_results_view' created.");
+
+            // 7. Create a StatementSet to execute multiple INSERT statements
+            StatementSet statementSet = tEnv.createStatementSet();
+
+            // Define the INSERT INTO statement for the Kafka Sink
+            final String insertKafkaSQL =
+                "INSERT INTO kafka_bloom_sink " + // Target the Kafka sink table
+                "SELECT rid, window_end, bloom_filter_base64 FROM bloom_filter_results_view";
+
+            LOG.info("Adding Kafka INSERT statement to StatementSet:\n{}", insertKafkaSQL);
+            statementSet.addInsertSql(insertKafkaSQL);
+
+            // Define the INSERT INTO statement for the Filesystem Sink
+            final String insertFsSQL =
+                "INSERT INTO filesystem_bloom_sink " + // Target the Filesystem sink table
+                "SELECT rid, window_end, bloom_filter_base64 FROM bloom_filter_results_view";
+
+            LOG.info("Adding Filesystem INSERT statement to StatementSet:\n{}", insertFsSQL);
+            statementSet.addInsertSql(insertFsSQL);
+
+
+            // 8. Execute the StatementSet (NEW Structure)
+            LOG.info("Executing StatementSet to start data flow to Kafka and Filesystem sinks...");
+            statementSet.execute(); // Submits the job
+            LOG.info("Flink job submitted and running.");
+            
         } catch (Exception e) {
             LOG.error("An error occurred during Flink Bloom Filter job execution:", e);
             throw e;
