@@ -58,7 +58,7 @@ public class SimilarityCalculationJob {
 
             // 3. Define Kafka Sink Table DDL (Writing Similarities)
             final String sinkDDL = String.format(
-                "CREATE TABLE similarity_sink (" +
+                "CREATE TABLE similarity_kafka_sink (" +
                 "  window_end STRING," +
                 "  rid1 STRING," +       // ID of the first train in the pair
                 "  rid2 STRING," +       // ID of the second train in the pair
